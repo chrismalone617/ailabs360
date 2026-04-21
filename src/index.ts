@@ -17,15 +17,14 @@ const RSS_FEEDS = [
   { url: 'https://feeds.arstechnica.com/arstechnica/index', source: 'Ars Technica' },
   { url: 'https://news.ycombinator.com/rss', source: 'HackerNews' },
   { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', source: 'CNBC' },
-  { url: 'https://feeds.techcrunch.com/techcrunch/', source: 'TechCrunch' },
-  { url: 'https://www.theverge.com/rss/index.xml', source: 'The Verge' },
   { url: 'https://venturebeat.com/feed/', source: 'VentureBeat' },
-  { url: 'https://www.technologyreview.com/feed.xml', source: 'MIT Tech Review' },
   { url: 'https://www.wired.com/feed/rss', source: 'Wired' },
   { url: 'https://feeds.bloomberg.com/markets/news.rss', source: 'Bloomberg' },
-  { url: 'https://feeds.reuters.com/reuters/technologyNews', source: 'Reuters Tech' },
-  { url: 'https://feeds.forbes.com/sites/forbestech/feed/', source: 'Forbes Tech' },
   { url: 'https://www.zdnet.com/news/rss.xml', source: 'ZDNet' },
+  { url: 'https://feeds.nytimes.com/services/xml/rss/nyt/Technology.xml', source: 'NYT Tech' },
+  { url: 'https://feeds.bloomberg.com/technology/news.rss', source: 'Bloomberg Tech' },
+  { url: 'https://www.pcgamer.com/rss/', source: 'PC Gamer' },
+  { url: 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=MSFT', source: 'Yahoo Finance' },
 ];
 
 async function parseRSSFeed(feedUrl: string): Promise<any[]> {
