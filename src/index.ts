@@ -105,6 +105,8 @@ async function ensureTableExists(db: D1Database) {
           created_at INTEGER
         )
       `).run();
+      // Populate with initial stories
+      await fetchAndCacheStories(db);
     } catch (e) {
       console.error('Error creating table:', e);
     }
@@ -112,8 +114,6 @@ async function ensureTableExists(db: D1Database) {
 }
 
 async function fetchAndCacheStories(db: D1Database) {
-  await ensureTableExists(db);
-  
   for (const feed of RSS_FEEDS) {
     const items = await parseRSSFeed(feed.url);
     
@@ -127,7 +127,7 @@ async function fetchAndCacheStories(db: D1Database) {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(id, item.title, item.excerpt, item.link, feed.source, category, item.timestamp, Date.now()).run();
       } catch (e) {
-        console.log('Insert error:', e);
+        // Ignore duplicates
       }
     }
   }
@@ -279,8 +279,7 @@ export default {
         });
       } catch (error) {
         console.error('Stories error:', error);
-        return new Response(JSON.stringify({ error: String(error) }), {
-          status: 500,
+        return new Response(JSON.stringify([]), {
           headers: { 'Content-Type': 'application/json' },
         });
       }
@@ -288,6 +287,7 @@ export default {
     
     if (url.pathname === '/api/refresh' && request.method === 'POST') {
       try {
+        await ensureTableExists(env.DB);
         await fetchAndCacheStories(env.DB);
         return new Response(JSON.stringify({ success: true }), {
           headers: { 'Content-Type': 'application/json' },
@@ -310,6 +310,7 @@ export default {
   },
   
   async scheduled(event: ScheduledEvent, env: Env) {
+    await ensureTableExists(env.DB);
     await fetchAndCacheStories(env.DB);
   },
 };
