@@ -81,47 +81,53 @@ function categorizeStory(title: string): string {
   const lowerTitle = title.toLowerCase();
   
   if (lowerTitle.includes('research') || lowerTitle.includes('paper') || lowerTitle.includes('study')) return 'research';
-  if (lowerTitle.includes('funding') || lowerTitle.includes('raise') || lowerTitle.includes('series')) return 'funding';
+  if (lowerTitle.includes('funding') || lowerTitle.includes('raise') || lowerTitle.includes('series') || lowerTitle.includes('invest')) return 'funding';
   if (lowerTitle.includes('regulation') || lowerTitle.includes('policy') || lowerTitle.includes('law')) return 'policy';
   if (lowerTitle.includes('acquire') || lowerTitle.includes('acquisition')) return 'markets';
   
   return 'news';
 }
 
-async function initDB(db: D1Database) {
+async function ensureTableExists(db: D1Database) {
   try {
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS stories (
-        id TEXT PRIMARY KEY,
-        title TEXT,
-        excerpt TEXT,
-        link TEXT,
-        source TEXT,
-        category TEXT,
-        timestamp INTEGER,
-        created_at INTEGER
-      )
-    `);
-  } catch (error) {
-    console.log('DB already initialized');
+    await db.prepare(`SELECT 1 FROM stories LIMIT 1`).first();
+  } catch {
+    try {
+      await db.prepare(`
+        CREATE TABLE stories (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          excerpt TEXT,
+          link TEXT NOT NULL,
+          source TEXT,
+          category TEXT,
+          timestamp INTEGER,
+          created_at INTEGER
+        )
+      `).run();
+    } catch (e) {
+      console.error('Error creating table:', e);
+    }
   }
 }
 
 async function fetchAndCacheStories(db: D1Database) {
+  await ensureTableExists(db);
+  
   for (const feed of RSS_FEEDS) {
     const items = await parseRSSFeed(feed.url);
     
-    for (const item of items.slice(0, 5)) {
-      const id = `${feed.source}-${item.link}`.replace(/[^a-zA-Z0-9-]/g, '').substring(0, 50);
+    for (const item of items.slice(0, 3)) {
+      const id = Math.random().toString(36).substring(2, 15) + '-' + Date.now();
       const category = categorizeStory(item.title);
       
       try {
         await db.prepare(
-          `INSERT OR REPLACE INTO stories (id, title, excerpt, link, source, category, timestamp, created_at)
+          `INSERT INTO stories (id, title, excerpt, link, source, category, timestamp, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(id, item.title, item.excerpt, item.link, feed.source, category, item.timestamp, Date.now()).run();
       } catch (e) {
-        console.log('Insert error');
+        console.log('Insert error:', e);
       }
     }
   }
@@ -143,7 +149,7 @@ const HTML = `
         .search-bar { flex: 1; max-width: 400px; }
         .search-bar input { width: 100%; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 6px; color: #e0e0e0; }
         .nav-pills { display: flex; gap: 8px; }
-        .nav-pill { padding: 8px 16px; background: rgba(100, 200, 255, 0.1); border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 20px; color: #64c8ff; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .nav-pill { padding: 8px 16px; background: rgba(100, 200, 255, 0.1); border: 1px solid rgba(100, 200, 255, 0.3); border-radius: 20px; color: #64c8ff; font-size: 13px; cursor: pointer; }
         .nav-pill.active { background: #64c8ff; color: #0f0f1e; }
         main { max-width: 1400px; margin: 0 auto; padding: 48px 24px; }
         .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid rgba(100, 200, 255, 0.3); }
@@ -151,18 +157,17 @@ const HTML = `
         .section-dot { width: 8px; height: 8px; background: #64c8ff; border-radius: 50%; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .news-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(100, 200, 255, 0.15); border-radius: 8px; padding: 20px; transition: all 0.3s; cursor: pointer; display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: inherit; }
+        .news-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(100, 200, 255, 0.15); border-radius: 8px; padding: 20px; transition: all 0.3s; display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: inherit; }
         .news-card:hover { background: rgba(100, 200, 255, 0.08); border-color: rgba(100, 200, 255, 0.4); transform: translateY(-2px); }
         .news-tag { font-size: 11px; font-weight: 600; padding: 4px 10px; background: rgba(100, 200, 255, 0.15); color: #64c8ff; border-radius: 4px; width: fit-content; text-transform: uppercase; }
         .news-headline { font-size: 16px; font-weight: 600; line-height: 1.4; color: #ffffff; }
         .news-card:hover .news-headline { color: #64c8ff; }
-        .news-excerpt { font-size: 13px; color: #b0b0b0; line-height: 1.5; }
+        .news-excerpt { font-size: 13px; color: #b0b0b0; }
         .news-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #808080; margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(100, 200, 255, 0.1); }
         .loading { text-align: center; padding: 40px; color: #808080; }
         .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(100, 200, 255, 0.3); border-top-color: #64c8ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         footer { background: rgba(15, 15, 30, 0.95); border-top: 1px solid rgba(100, 200, 255, 0.2); padding: 32px 24px; text-align: center; color: #707070; font-size: 13px; margin-top: 80px; }
-        @media (max-width: 768px) { .header-content { flex-direction: column; gap: 16px; } .search-bar { max-width: none; } .news-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -198,11 +203,12 @@ const HTML = `
         async function loadStories() {
             try {
                 const response = await fetch('/api/stories');
+                if (!response.ok) throw new Error('API error');
                 const stories = await response.json();
                 allStories = stories;
                 renderStories();
             } catch (error) {
-                console.error('Error loading stories:', error);
+                console.error('Error:', error);
                 setTimeout(loadStories, 5000);
             }
         }
@@ -257,27 +263,42 @@ export default {
     const url = new URL(request.url);
     
     if (url.pathname === '/api/stories') {
-      await initDB(env.DB);
-      const result = await env.DB.prepare(
-        `SELECT * FROM stories ORDER BY timestamp DESC LIMIT 50`
-      ).all();
-      
-      const stories = (result.results || []).map((row: any) => ({
-        ...row,
-        age: formatAge(row.timestamp),
-      }));
-      
-      return new Response(JSON.stringify(stories), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      });
+      try {
+        await ensureTableExists(env.DB);
+        const result = await env.DB.prepare(
+          `SELECT * FROM stories ORDER BY timestamp DESC LIMIT 50`
+        ).all();
+        
+        const stories = (result.results || []).map((row: any) => ({
+          ...row,
+          age: formatAge(row.timestamp),
+        }));
+        
+        return new Response(JSON.stringify(stories || []), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        });
+      } catch (error) {
+        console.error('Stories error:', error);
+        return new Response(JSON.stringify({ error: String(error) }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
     
     if (url.pathname === '/api/refresh' && request.method === 'POST') {
-      await initDB(env.DB);
-      await fetchAndCacheStories(env.DB);
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      try {
+        await fetchAndCacheStories(env.DB);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Refresh error:', error);
+        return new Response(JSON.stringify({ error: String(error) }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
     
     return new Response(HTML, {
@@ -289,7 +310,6 @@ export default {
   },
   
   async scheduled(event: ScheduledEvent, env: Env) {
-    await initDB(env.DB);
     await fetchAndCacheStories(env.DB);
   },
 };
