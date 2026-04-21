@@ -1,0 +1,21 @@
+name = "ailabs360"
+main = "src/index.ts"
+compatibility_date = "2024-11-12"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ailabs360"
+database_id = "ailabs360-main"
+
+[env.production]
+routes = [
+  { pattern = "ailabs360.com/*", zone_name = "ailabs360.com" }
+]
+
+[build]
+command = "npm run build"
+cwd = "."
+
+[build.upload]
+format = "service-worker"
