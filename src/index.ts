@@ -24,7 +24,7 @@ const RSS_FEEDS = [
   { url: 'https://feeds.nytimes.com/services/xml/rss/nyt/Technology.xml', source: 'NYT Tech' },
   { url: 'https://feeds.bloomberg.com/technology/news.rss', source: 'Bloomberg Tech' },
   { url: 'https://www.pcgamer.com/rss/', source: 'PC Gamer' },
-  { url: 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=MSFT', source: 'Yahoo Finance' },
+  { url: 'https://www.gizmodo.com/feed', source: 'Gizmodo' },
 ];
 
 async function parseRSSFeed(feedUrl: string): Promise<any[]> {
