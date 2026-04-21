@@ -1,11 +1,12 @@
 name = "ailabs360"
 main = "src/index.ts"
 compatibility_date = "2024-11-12"
+account_id = "5977e3122206f94c969f07ad33c0d285"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "ailabs360"
-database_id = "ailabs360-main"
+database_id = "20e8e1f6-bc33-41a0-bf5a-2a142a67aa91"
 
 [env.production]
 routes = [
