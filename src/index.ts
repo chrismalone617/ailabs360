@@ -17,6 +17,15 @@ const RSS_FEEDS = [
   { url: 'https://feeds.arstechnica.com/arstechnica/index', source: 'Ars Technica' },
   { url: 'https://news.ycombinator.com/rss', source: 'HackerNews' },
   { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', source: 'CNBC' },
+  { url: 'https://feeds.techcrunch.com/techcrunch/', source: 'TechCrunch' },
+  { url: 'https://www.theverge.com/rss/index.xml', source: 'The Verge' },
+  { url: 'https://venturebeat.com/feed/', source: 'VentureBeat' },
+  { url: 'https://www.technologyreview.com/feed.xml', source: 'MIT Tech Review' },
+  { url: 'https://www.wired.com/feed/rss', source: 'Wired' },
+  { url: 'https://feeds.bloomberg.com/markets/news.rss', source: 'Bloomberg' },
+  { url: 'https://feeds.reuters.com/reuters/technologyNews', source: 'Reuters Tech' },
+  { url: 'https://feeds.forbes.com/sites/forbestech/feed/', source: 'Forbes Tech' },
+  { url: 'https://www.zdnet.com/news/rss.xml', source: 'ZDNet' },
 ];
 
 async function parseRSSFeed(feedUrl: string): Promise<any[]> {
@@ -46,7 +55,6 @@ async function parseRSSFeed(feedUrl: string): Promise<any[]> {
     
     return items;
   } catch (error) {
-    console.error('Error parsing RSS:', feedUrl);
     return [];
   }
 }
@@ -115,7 +123,7 @@ async function fetchAndCacheStories(db: D1Database) {
   for (const feed of RSS_FEEDS) {
     const items = await parseRSSFeed(feed.url);
     
-    for (const item of items.slice(0, 20)) {
+    for (const item of items.slice(0, 10)) {
       const id = Math.random().toString(36).substring(2, 15) + '-' + Date.now();
       const category = categorizeStory(item.title);
       
@@ -274,7 +282,6 @@ export default {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         });
       } catch (error) {
-        console.error('Stories error:', error);
         return new Response(JSON.stringify([]), {
           headers: { 'Content-Type': 'application/json' },
         });
