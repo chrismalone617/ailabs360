@@ -14,10 +14,9 @@ interface Env {
 }
 
 const RSS_FEEDS = [
-  { url: 'https://feeds.techcrunch.com/techcrunch/feed/', source: 'TechCrunch' },
   { url: 'https://feeds.arstechnica.com/arstechnica/index', source: 'Ars Technica' },
-  { url: 'https://www.theverge.com/rss/index.xml', source: 'The Verge' },
-  { url: 'https://feeds.reuters.com/reuters/technologyNews', source: 'Reuters' },
+  { url: 'https://news.ycombinator.com/rss', source: 'HackerNews' },
+  { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', source: 'CNBC' },
 ];
 
 async function parseRSSFeed(feedUrl: string): Promise<any[]> {
@@ -105,7 +104,6 @@ async function ensureTableExists(db: D1Database) {
           created_at INTEGER
         )
       `).run();
-      // Populate with initial stories
       await fetchAndCacheStories(db);
     } catch (e) {
       console.error('Error creating table:', e);
@@ -117,7 +115,7 @@ async function fetchAndCacheStories(db: D1Database) {
   for (const feed of RSS_FEEDS) {
     const items = await parseRSSFeed(feed.url);
     
-    for (const item of items.slice(0, 3)) {
+    for (const item of items.slice(0, 20)) {
       const id = Math.random().toString(36).substring(2, 15) + '-' + Date.now();
       const category = categorizeStory(item.title);
       
@@ -126,9 +124,7 @@ async function fetchAndCacheStories(db: D1Database) {
           `INSERT INTO stories (id, title, excerpt, link, source, category, timestamp, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(id, item.title, item.excerpt, item.link, feed.source, category, item.timestamp, Date.now()).run();
-      } catch (e) {
-        // Ignore duplicates
-      }
+      } catch (e) {}
     }
   }
 }
@@ -266,7 +262,7 @@ export default {
       try {
         await ensureTableExists(env.DB);
         const result = await env.DB.prepare(
-          `SELECT * FROM stories ORDER BY timestamp DESC LIMIT 50`
+          `SELECT * FROM stories ORDER BY timestamp DESC LIMIT 100`
         ).all();
         
         const stories = (result.results || []).map((row: any) => ({
@@ -293,7 +289,6 @@ export default {
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (error) {
-        console.error('Refresh error:', error);
         return new Response(JSON.stringify({ error: String(error) }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
